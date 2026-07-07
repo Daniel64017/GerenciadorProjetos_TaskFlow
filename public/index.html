@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskFlow - Sistema de Gerenciamento de Projetos e Tarefas</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-weight-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Notificações Toast do Sistema -->
+    <div id="toast-container"></div>
+
+    <!-- TELA DE LOGIN / REGISTRO -->
+    <div id="auth-screen" class="screen active">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="logo">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span>TaskFlow</span>
+                </div>
+                <h2>Bem-vindo de volta!</h2>
+                <p>Gerencie seus projetos e tarefas com eficiência.</p>
+            </div>
+            
+            <!-- Formulário de Login -->
+            <form id="login-form" class="auth-form active">
+                <div class="form-group">
+                    <label for="login-email"><i class="fa-solid fa-envelope"></i> E-mail</label>
+                    <input type="email" id="login-email" placeholder="nome@exemplo.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password"><i class="fa-solid fa-lock"></i> Senha</label>
+                    <input type="password" id="login-password" placeholder="Sua senha" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Entrar <i class="fa-solid fa-arrow-right-to-bracket"></i></button>
+                <div class="auth-footer">
+                    Não tem uma conta? <a href="#" id="go-to-register">Cadastre-se</a>
+                </div>
+            </form>
+
+            <!-- Formulário de Registro -->
+            <form id="register-form" class="auth-form">
+                <div class="form-group">
+                    <label for="register-name"><i class="fa-solid fa-user"></i> Nome Completo</label>
+                    <input type="text" id="register-name" placeholder="Como quer ser chamado?" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-email"><i class="fa-solid fa-envelope"></i> E-mail</label>
+                    <input type="email" id="register-email" placeholder="nome@exemplo.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-password"><i class="fa-solid fa-lock"></i> Senha</label>
+                    <input type="password" id="register-password" placeholder="Crie uma senha forte" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-role"><i class="fa-solid fa-user-gear"></i> Tipo de Perfil (Para testes)</label>
+                    <select id="register-role" required>
+                        <option value="user" selected>Colaborador (Usuário Comum)</option>
+                        <option value="manager">Gerente de Projeto</option>
+                        <option value="admin">Administrador do Sistema</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-success btn-block">Criar Conta <i class="fa-solid fa-user-plus"></i></button>
+                <div class="auth-footer">
+                    Já possui conta? <a href="#" id="go-to-login">Faça Login</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- TELA PRINCIPAL (DASHBOARD/SPA) -->
+    <div id="main-screen" class="screen">
+        <!-- Sidebar lateral -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span>TaskFlow</span>
+                </div>
+            </div>
+            
+            <div class="user-profile-badge">
+                <div class="avatar"><i class="fa-solid fa-circle-user"></i></div>
+                <div class="user-info">
+                    <span id="user-display-name">Carregando...</span>
+                    <span id="user-display-role" class="badge">Colaborador</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="#" class="nav-link active" data-tab="dashboard-tab"><i class="fa-solid fa-chart-line"></i> Dashboard</a></li>
+                    <li><a href="#" class="nav-link" data-tab="projects-tab"><i class="fa-solid fa-folder-open"></i> Projetos</a></li>
+                    <li><a href="#" class="nav-link" data-tab="tasks-tab"><i class="fa-solid fa-clipboard-list"></i> Quadro Kanban</a></li>
+                    <li id="nav-users-item" class="admin-only"><a href="#" class="nav-link" data-tab="users-tab"><i class="fa-solid fa-users-gear"></i> Usuários</a></li>
+                    <li><a href="#" class="nav-link" data-tab="alerts-tab"><i class="fa-solid fa-envelope-open-text"></i> Alertas Simulação <span id="alerts-unread-badge" class="badge badge-danger">0</span></a></li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button id="logout-btn" class="btn btn-outline-danger btn-block"><i class="fa-solid fa-right-from-bracket"></i> Sair da Conta</button>
+            </div>
+        </aside>
+
+        <!-- Conteúdo Principal -->
+        <main class="main-content">
+            <!-- Topbar superior -->
+            <header class="topbar">
+                <div class="page-title">
+                    <h1 id="current-tab-title">Dashboard</h1>
+                </div>
+                <div class="topbar-actions">
+                    <button id="trigger-alerts-btn" class="btn btn-sm btn-outline-primary" title="Realizar varredura e enviar e-mails de alerta de vencimento">
+                        <i class="fa-solid fa-bell"></i> Varredura de Prazos
+                    </button>
+                </div>
+            </header>
+
+            <!-- CONTEÚDO DAS ABAS -->
+            <div class="tab-container">
+                
+                <!-- ABA 1: DASHBOARD -->
+                <div id="dashboard-tab" class="tab-content active">
+                    <!-- Cards Estatísticos -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-primary-soft"><i class="fa-solid fa-folder"></i></div>
+                            <div class="stat-details">
+                                <span class="stat-val" id="stat-projects-count">0</span>
+                                <span class="stat-lbl">Projetos Ativos</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon bg-warning-soft"><i class="fa-solid fa-clock"></i></div>
+                            <div class="stat-details">
+                                <span class="stat-val" id="stat-tasks-todo">0</span>
+                                <span class="stat-lbl">Tarefas A Fazer / Em Andamento</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon bg-success-soft"><i class="fa-solid fa-circle-check"></i></div>
+                            <div class="stat-details">
+                                <span class="stat-val" id="stat-tasks-done">0</span>
+                                <span class="stat-lbl">Tarefas Concluídas</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon bg-danger-soft"><i class="fa-solid fa-calendar-xmark"></i></div>
+                            <div class="stat-details">
+                                <span class="stat-val" id="stat-tasks-overdue">0</span>
+                                <span class="stat-lbl">Tarefas Atrasadas</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gráficos e Alertas -->
+                    <div class="dashboard-charts-grid">
+                        <div class="chart-card">
+                            <h3>Distribuição de Tarefas</h3>
+                            <div class="chart-container">
+                                <canvas id="tasks-status-chart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Resumo de Prazos e Alertas Próximos</h3>
+                            <div class="dashboard-alerts-list" id="dashboard-alerts-container">
+                                <p class="empty-state">Nenhum e-mail de alerta disparado ainda.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ABA 2: PROJETOS -->
+                <div id="projects-tab" class="tab-content">
+                    <div class="tab-actions">
+                        <div class="search-bar">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="project-search" placeholder="Buscar projetos...">
+                        </div>
+                        <button id="new-project-btn" class="btn btn-primary manager-only"><i class="fa-solid fa-plus"></i> Novo Projeto</button>
+                    </div>
+
+                    <div class="projects-grid" id="projects-grid-container">
+                        <!-- Renderizado dinamicamente -->
+                    </div>
+                </div>
+
+                <!-- ABA 3: TAREFAS (KANBAN) -->
+                <div id="tasks-tab" class="tab-content">
+                    <div class="tab-actions tasks-filter-bar">
+                        <div class="filter-group">
+                            <label for="task-project-filter">Filtrar por Projeto:</label>
+                            <select id="task-project-filter">
+                                <option value="">Selecione um projeto...</option>
+                            </select>
+                        </div>
+                        <div class="filter-group manager-only">
+                            <button id="new-task-btn" class="btn btn-primary" disabled><i class="fa-solid fa-plus"></i> Nova Tarefa</button>
+                        </div>
+                        <div class="filter-group">
+                            <button id="project-report-btn" class="btn btn-secondary" disabled><i class="fa-solid fa-file-pdf"></i> Gerar Relatório PDF</button>
+                        </div>
+                    </div>
+
+                    <!-- Layout Kanban -->
+                    <div class="kanban-board">
+                        <!-- Coluna A Fazer -->
+                        <div class="kanban-column" data-status="todo">
+                            <div class="column-header bg-todo">
+                                <span>A Fazer</span>
+                                <span class="column-count" id="count-todo">0</span>
+                            </div>
+                            <div class="kanban-cards" id="cards-todo">
+                                <!-- Cards renderizados aqui -->
+                            </div>
+                        </div>
+
+                        <!-- Coluna Em Andamento -->
+                        <div class="kanban-column" data-status="in_progress">
+                            <div class="column-header bg-progress">
+                                <span>Em Andamento</span>
+                                <span class="column-count" id="count-progress">0</span>
+                            </div>
+                            <div class="kanban-cards" id="cards-in_progress">
+                                <!-- Cards renderizados aqui -->
+                            </div>
+                        </div>
+
+                        <!-- Coluna Concluído -->
+                        <div class="kanban-column" data-status="done">
+                            <div class="column-header bg-done">
+                                <span>Concluída</span>
+                                <span class="column-count" id="count-done">0</span>
+                            </div>
+                            <div class="kanban-cards" id="cards-done">
+                                <!-- Cards renderizados aqui -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ABA 4: USUÁRIOS (ADMIN ONLY) -->
+                <div id="users-tab" class="tab-content">
+                    <div class="tab-actions">
+                        <h3>Gerenciamento de Usuários</h3>
+                        <button id="new-user-btn" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Criar Usuário</button>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="table" id="users-table">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>E-mail</th>
+                                    <th>Perfil</th>
+                                    <th>Criado em</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body">
+                                <!-- Preenchido dinamicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ABA 5: ALERTAS (SIMULAÇÃO DE E-MAILS ENVIADOS) -->
+                <div id="alerts-tab" class="tab-content">
+                    <div class="tab-actions">
+                        <h3>Caixa de Saída de E-mails (Simulação SMTP)</h3>
+                        <p>Aqui você confere todos os e-mails de alerta gerados pelo sistema para os colaboradores.</p>
+                    </div>
+
+                    <div class="alerts-history-list" id="alerts-history-container">
+                        <!-- Histórico renderizado aqui -->
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL: PROJETO (CRIAR/EDITAR) -->
+    <div id="project-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal-btn">&times;</span>
+            <h2 id="project-modal-title">Novo Projeto</h2>
+            <form id="project-form">
+                <input type="hidden" id="project-modal-id">
+                <div class="form-group">
+                    <label for="project-modal-name">Nome do Projeto *</label>
+                    <input type="text" id="project-modal-name" required placeholder="Digite o nome do projeto">
+                </div>
+                <div class="form-group">
+                    <label for="project-modal-description">Descrição</label>
+                    <textarea id="project-modal-description" rows="4" placeholder="Breve descrição dos objetivos do projeto"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary cancel-modal-btn">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Projeto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: MEMBROS DO PROJETO -->
+    <div id="members-modal" class="modal">
+        <div class="modal-content modal-md">
+            <span class="close-modal-btn">&times;</span>
+            <h2>Gerenciar Membros do Projeto</h2>
+            <h3 id="members-modal-project-name" class="text-primary">Projeto</h3>
+            
+            <div class="add-member-section manager-only">
+                <form id="add-member-form">
+                    <div class="form-row">
+                        <div class="form-group flex-grow">
+                            <label for="member-select">Convidar Colaborador:</label>
+                            <select id="member-select" required>
+                                <option value="">Selecione um usuário...</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-success align-self-end">Adicionar</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="members-list-wrapper">
+                <h4>Participantes Atuais</h4>
+                <ul class="members-list" id="project-members-list">
+                    <!-- Usuários participantes renderizados aqui -->
+                </ul>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary cancel-modal-btn">Concluído</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: TAREFA (CRIAR/EDITAR) -->
+    <div id="task-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal-btn">&times;</span>
+            <h2 id="task-modal-title">Nova Tarefa</h2>
+            <form id="task-form">
+                <input type="hidden" id="task-modal-id">
+                <div class="form-group">
+                    <label for="task-modal-title-input">Título da Tarefa *</label>
+                    <input type="text" id="task-modal-title-input" required placeholder="O que precisa ser feito?">
+                </div>
+                <div class="form-group">
+                    <label for="task-modal-description">Descrição</label>
+                    <textarea id="task-modal-description" rows="3" placeholder="Instruções e especificações da tarefa"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="task-modal-status">Status *</label>
+                        <select id="task-modal-status" required>
+                            <option value="todo">A Fazer</option>
+                            <option value="in_progress">Em Andamento</option>
+                            <option value="done">Concluída</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="task-modal-due-date">Prazo Final (Vencimento)</label>
+                        <input type="date" id="task-modal-due-date">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="task-modal-assignee">Responsável pela Tarefa</label>
+                    <select id="task-modal-assignee">
+                        <option value="">Sem responsável definido</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary cancel-modal-btn">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Tarefa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: USUÁRIO (CRIAR/EDITAR - ADMIN ONLY) -->
+    <div id="user-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal-btn">&times;</span>
+            <h2 id="user-modal-title">Novo Usuário</h2>
+            <form id="user-form">
+                <input type="hidden" id="user-modal-id">
+                <div class="form-group">
+                    <label for="user-modal-name">Nome Completo *</label>
+                    <input type="text" id="user-modal-name" required placeholder="Ex: João Silva">
+                </div>
+                <div class="form-group">
+                    <label for="user-modal-email">E-mail *</label>
+                    <input type="email" id="user-modal-email" required placeholder="joao@taskflow.com">
+                </div>
+                <div class="form-group">
+                    <label for="user-modal-password">Senha (<span id="user-pw-required-text">Obrigatória</span>)</label>
+                    <input type="password" id="user-modal-password" placeholder="Defina a senha do usuário">
+                </div>
+                <div class="form-group">
+                    <label for="user-modal-role">Perfil de Acesso *</label>
+                    <select id="user-modal-role" required>
+                        <option value="user">Colaborador (Usuário Comum)</option>
+                        <option value="manager">Gerente de Projeto</option>
+                        <option value="admin">Administrador do Sistema</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary cancel-modal-btn">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Usuário</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Custom JS Módulos -->
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
