@@ -3,24 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TaskFlow - Sistema de Gerenciamento de Projetos e Tarefas</title>
-    <!-- Google Fonts -->
+    <title>TaskFlow</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-weight-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Custom CSS -->
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <!-- Notificações Toast do Sistema -->
     <div id="toast-container"></div>
 
-    <!-- TELA DE LOGIN / REGISTRO -->
     <div id="auth-screen" class="screen active">
         <div class="auth-card">
             <div class="auth-header">
@@ -28,11 +21,10 @@
                     <i class="fa-solid fa-list-check"></i>
                     <span>TaskFlow</span>
                 </div>
-                <h2>Bem-vindo de volta!</h2>
+                <h2>Bem-vindo!</h2>
                 <p>Gerencie seus projetos e tarefas com eficiência.</p>
             </div>
             
-            <!-- Formulário de Login -->
             <form id="login-form" class="auth-form active">
                 <div class="form-group">
                     <label for="login-email"><i class="fa-solid fa-envelope"></i> E-mail</label>
@@ -48,11 +40,10 @@
                 </div>
             </form>
 
-            <!-- Formulário de Registro -->
             <form id="register-form" class="auth-form">
                 <div class="form-group">
                     <label for="register-name"><i class="fa-solid fa-user"></i> Nome Completo</label>
-                    <input type="text" id="register-name" placeholder="Como quer ser chamado?" required>
+                    <input type="text" id="register-name" placeholder="Nome completo" required>
                 </div>
                 <div class="form-group">
                     <label for="register-email"><i class="fa-solid fa-envelope"></i> E-mail</label>
@@ -60,10 +51,10 @@
                 </div>
                 <div class="form-group">
                     <label for="register-password"><i class="fa-solid fa-lock"></i> Senha</label>
-                    <input type="password" id="register-password" placeholder="Crie uma senha forte" required>
+                    <input type="password" id="register-password" placeholder="Sua senha" required>
                 </div>
                 <div class="form-group">
-                    <label for="register-role"><i class="fa-solid fa-user-gear"></i> Tipo de Perfil (Para testes)</label>
+                    <label for="register-role"><i class="fa-solid fa-user-gear"></i> Tipo de Perfil</label>
                     <select id="register-role" required>
                         <option value="user" selected>Colaborador (Usuário Comum)</option>
                         <option value="manager">Gerente de Projeto</option>
@@ -78,9 +69,7 @@
         </div>
     </div>
 
-    <!-- TELA PRINCIPAL (DASHBOARD/SPA) -->
     <div id="main-screen" class="screen">
-        <!-- Sidebar lateral -->
         <aside class="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
@@ -112,26 +101,21 @@
             </div>
         </aside>
 
-        <!-- Conteúdo Principal -->
         <main class="main-content">
-            <!-- Topbar superior -->
             <header class="topbar">
                 <div class="page-title">
                     <h1 id="current-tab-title">Dashboard</h1>
                 </div>
                 <div class="topbar-actions">
-                    <button id="trigger-alerts-btn" class="btn btn-sm btn-outline-primary" title="Realizar varredura e enviar e-mails de alerta de vencimento">
+                    <button id="trigger-alerts-btn" class="btn btn-sm btn-outline-primary">
                         <i class="fa-solid fa-bell"></i> Varredura de Prazos
                     </button>
                 </div>
             </header>
 
-            <!-- CONTEÚDO DAS ABAS -->
             <div class="tab-container">
                 
-                <!-- ABA 1: DASHBOARD -->
                 <div id="dashboard-tab" class="tab-content active">
-                    <!-- Cards Estatísticos -->
                     <div class="stats-grid">
                         <div class="stat-card">
                             <div class="stat-icon bg-primary-soft"><i class="fa-solid fa-folder"></i></div>
@@ -144,7 +128,7 @@
                             <div class="stat-icon bg-warning-soft"><i class="fa-solid fa-clock"></i></div>
                             <div class="stat-details">
                                 <span class="stat-val" id="stat-tasks-todo">0</span>
-                                <span class="stat-lbl">Tarefas A Fazer / Em Andamento</span>
+                                <span class="stat-lbl">Tarefas Ativas</span>
                             </div>
                         </div>
                         <div class="stat-card">
@@ -163,7 +147,6 @@
                         </div>
                     </div>
 
-                    <!-- Gráficos e Alertas -->
                     <div class="dashboard-charts-grid">
                         <div class="chart-card">
                             <h3>Distribuição de Tarefas</h3>
@@ -172,15 +155,14 @@
                             </div>
                         </div>
                         <div class="chart-card">
-                            <h3>Resumo de Prazos e Alertas Próximos</h3>
+                            <h3>Resumo de Prazos e Alertas</h3>
                             <div class="dashboard-alerts-list" id="dashboard-alerts-container">
-                                <p class="empty-state">Nenhum e-mail de alerta disparado ainda.</p>
+                                <p class="empty-state">Nenhum e-mail de alerta disparado.</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- ABA 2: PROJETOS -->
                 <div id="projects-tab" class="tab-content">
                     <div class="tab-actions">
                         <div class="search-bar">
@@ -191,11 +173,9 @@
                     </div>
 
                     <div class="projects-grid" id="projects-grid-container">
-                        <!-- Renderizado dinamicamente -->
                     </div>
                 </div>
 
-                <!-- ABA 3: TAREFAS (KANBAN) -->
                 <div id="tasks-tab" class="tab-content">
                     <div class="tab-actions tasks-filter-bar">
                         <div class="filter-group">
@@ -212,44 +192,36 @@
                         </div>
                     </div>
 
-                    <!-- Layout Kanban -->
                     <div class="kanban-board">
-                        <!-- Coluna A Fazer -->
                         <div class="kanban-column" data-status="todo">
                             <div class="column-header bg-todo">
                                 <span>A Fazer</span>
                                 <span class="column-count" id="count-todo">0</span>
                             </div>
                             <div class="kanban-cards" id="cards-todo">
-                                <!-- Cards renderizados aqui -->
                             </div>
                         </div>
 
-                        <!-- Coluna Em Andamento -->
                         <div class="kanban-column" data-status="in_progress">
                             <div class="column-header bg-progress">
                                 <span>Em Andamento</span>
                                 <span class="column-count" id="count-progress">0</span>
                             </div>
                             <div class="kanban-cards" id="cards-in_progress">
-                                <!-- Cards renderizados aqui -->
                             </div>
                         </div>
 
-                        <!-- Coluna Concluído -->
                         <div class="kanban-column" data-status="done">
                             <div class="column-header bg-done">
                                 <span>Concluída</span>
                                 <span class="column-count" id="count-done">0</span>
                             </div>
                             <div class="kanban-cards" id="cards-done">
-                                <!-- Cards renderizados aqui -->
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- ABA 4: USUÁRIOS (ADMIN ONLY) -->
                 <div id="users-tab" class="tab-content">
                     <div class="tab-actions">
                         <h3>Gerenciamento de Usuários</h3>
@@ -268,13 +240,11 @@
                                 </tr>
                             </thead>
                             <tbody id="users-table-body">
-                                <!-- Preenchido dinamicamente -->
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- ABA 5: ALERTAS (SIMULAÇÃO DE E-MAILS ENVIADOS) -->
                 <div id="alerts-tab" class="tab-content">
                     <div class="tab-actions">
                         <h3>Caixa de Saída de E-mails (Simulação SMTP)</h3>
@@ -282,7 +252,6 @@
                     </div>
 
                     <div class="alerts-history-list" id="alerts-history-container">
-                        <!-- Histórico renderizado aqui -->
                     </div>
                 </div>
 
@@ -290,7 +259,6 @@
         </main>
     </div>
 
-    <!-- MODAL: PROJETO (CRIAR/EDITAR) -->
     <div id="project-modal" class="modal">
         <div class="modal-content">
             <span class="close-modal-btn">&times;</span>
@@ -303,7 +271,7 @@
                 </div>
                 <div class="form-group">
                     <label for="project-modal-description">Descrição</label>
-                    <textarea id="project-modal-description" rows="4" placeholder="Breve descrição dos objetivos do projeto"></textarea>
+                    <textarea id="project-modal-description" rows="4" placeholder="Breve descrição do projeto"></textarea>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary cancel-modal-btn">Cancelar</button>
@@ -313,7 +281,6 @@
         </div>
     </div>
 
-    <!-- MODAL: MEMBROS DO PROJETO -->
     <div id="members-modal" class="modal">
         <div class="modal-content modal-md">
             <span class="close-modal-btn">&times;</span>
@@ -337,7 +304,6 @@
             <div class="members-list-wrapper">
                 <h4>Participantes Atuais</h4>
                 <ul class="members-list" id="project-members-list">
-                    <!-- Usuários participantes renderizados aqui -->
                 </ul>
             </div>
             
@@ -347,7 +313,6 @@
         </div>
     </div>
 
-    <!-- MODAL: TAREFA (CRIAR/EDITAR) -->
     <div id="task-modal" class="modal">
         <div class="modal-content">
             <span class="close-modal-btn">&times;</span>
@@ -360,7 +325,7 @@
                 </div>
                 <div class="form-group">
                     <label for="task-modal-description">Descrição</label>
-                    <textarea id="task-modal-description" rows="3" placeholder="Instruções e especificações da tarefa"></textarea>
+                    <textarea id="task-modal-description" rows="3" placeholder="Instruções da tarefa"></textarea>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -372,12 +337,12 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="task-modal-due-date">Prazo Final (Vencimento)</label>
+                        <label for="task-modal-due-date">Prazo Final</label>
                         <input type="date" id="task-modal-due-date">
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="task-modal-assignee">Responsável pela Tarefa</label>
+                    <label for="task-modal-assignee">Responsável</label>
                     <select id="task-modal-assignee">
                         <option value="">Sem responsável definido</option>
                     </select>
@@ -390,7 +355,6 @@
         </div>
     </div>
 
-    <!-- MODAL: USUÁRIO (CRIAR/EDITAR - ADMIN ONLY) -->
     <div id="user-modal" class="modal">
         <div class="modal-content">
             <span class="close-modal-btn">&times;</span>
@@ -407,7 +371,7 @@
                 </div>
                 <div class="form-group">
                     <label for="user-modal-password">Senha (<span id="user-pw-required-text">Obrigatória</span>)</label>
-                    <input type="password" id="user-modal-password" placeholder="Defina a senha do usuário">
+                    <input type="password" id="user-modal-password" placeholder="Defina a senha">
                 </div>
                 <div class="form-group">
                     <label for="user-modal-role">Perfil de Acesso *</label>
@@ -425,7 +389,6 @@
         </div>
     </div>
 
-    <!-- Custom JS Módulos -->
     <script type="module" src="js/app.js"></script>
 </body>
 </html>

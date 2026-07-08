@@ -1,6 +1,3 @@
--- Script SQL de criação das tabelas para o banco de dados do TaskFlow
-
--- Tabela de Usuários
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -10,7 +7,6 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Tabela de Projetos
 CREATE TABLE IF NOT EXISTS projects (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -20,7 +16,6 @@ CREATE TABLE IF NOT EXISTS projects (
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Tabela de Associação de Usuários aos Projetos (N:M)
 CREATE TABLE IF NOT EXISTS project_members (
     project_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
@@ -29,7 +24,6 @@ CREATE TABLE IF NOT EXISTS project_members (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Tabela de Tarefas
 CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id INTEGER NOT NULL,
@@ -43,7 +37,6 @@ CREATE TABLE IF NOT EXISTS tasks (
     FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL
 );
 
--- Tabela de Registro de Alertas de E-mail (Simulação)
 CREATE TABLE IF NOT EXISTS email_alerts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     to_email TEXT NOT NULL,

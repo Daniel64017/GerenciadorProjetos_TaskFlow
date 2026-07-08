@@ -1,25 +1,19 @@
-// TaskFlow - Módulo de Integração com a API REST
-
 const BASE_URL = "/api";
 
 export const api = {
-    // Retorna o token salvo no localStorage
     getToken() {
         return localStorage.getItem("taskflow_token");
     },
 
-    // Salva o token
     setToken(token) {
         localStorage.setItem("taskflow_token", token);
     },
 
-    // Remove o token
     clearToken() {
         localStorage.removeItem("taskflow_token");
         localStorage.removeItem("taskflow_user");
     },
 
-    // Retorna os dados do usuário salvo localmente
     getUser() {
         try {
             return JSON.parse(localStorage.getItem("taskflow_user"));
@@ -28,19 +22,15 @@ export const api = {
         }
     },
 
-    // Salva os dados do usuário localmente
     setUser(user) {
         localStorage.setItem("taskflow_user", JSON.stringify(user));
     },
 
-    // Método genérico para requisições
     async request(endpoint, options = {}) {
         const url = `${BASE_URL}${endpoint}`;
         
-        // Inicializa os headers
         options.headers = options.headers || {};
         
-        // Adiciona Content-Type padrão para JSON se for um envio
         if (options.body && !(options.body instanceof FormData)) {
             options.headers["Content-Type"] = "application/json";
             if (typeof options.body === "object") {
@@ -48,7 +38,6 @@ export const api = {
             }
         }
 
-        // Adiciona Token JWT se estiver logado
         const token = this.getToken();
         if (token) {
             options.headers["Authorization"] = `Bearer ${token}`;
@@ -57,7 +46,6 @@ export const api = {
         try {
             const response = await fetch(url, options);
             
-            // Tratamento especial para PDF (retorna Blob)
             if (response.ok && response.headers.get("Content-Type") === "application/pdf") {
                 return await response.blob();
             }
@@ -65,7 +53,6 @@ export const api = {
             const data = await response.json();
 
             if (!response.ok) {
-                // Se o token estiver expirado ou inválido (401), desloga o usuário
                 if (response.status === 401 && endpoint !== "/auth/login") {
                     this.clearToken();
                     window.dispatchEvent(new CustomEvent("auth-expired"));
@@ -80,7 +67,6 @@ export const api = {
         }
     },
 
-    // Atalhos para métodos HTTP
     get(endpoint) {
         return this.request(endpoint, { method: "GET" });
     },

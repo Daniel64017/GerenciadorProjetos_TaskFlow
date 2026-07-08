@@ -12,23 +12,13 @@ from fpdf import FPDF
 from config import Config
 from db import get_db_connection, init_db
 
-# Inicializa o Flask
 app = Flask(__name__, static_folder="public", static_url_path="")
-
-# Configuração do segredo JWT
 app.config["SECRET_KEY"] = Config.SECRET_KEY
 
-# Inicializa o banco de dados se necessário ao subir o app
 with app.app_context():
     init_db()
 
-
-# ==========================================
-# MIDDLEWARES / DECORATORS
-# ==========================================
-
 def token_required(f):
-    """Decorator para exigir autenticação via JWT no header Authorization."""
     @wraps(f)
     def decorated(*args, **kwargs):
         token = None
@@ -42,7 +32,6 @@ def token_required(f):
             
         try:
             data = jwt.decode(token, app.config["SECRET_KEY"], algorithms=["HS256"])
-            # Busca o usuário no banco para garantir que ainda existe e obter dados atuais
             conn = get_db_connection()
             user = conn.execute("SELECT id, name, email, role FROM users WHERE id = ?", (data["sub"],)).fetchone()
             conn.close()
@@ -59,9 +48,7 @@ def token_required(f):
         return f(current_user, *args, **kwargs)
     return decorated
 
-
 def roles_allowed(*roles):
-    """Decorator para restringir acesso a perfis específicos."""
     def decorator(f):
         @wraps(f)
         def decorated(current_user, *args, **kwargs):
@@ -71,11 +58,6 @@ def roles_allowed(*roles):
         return decorated
     return decorator
 
-
-# ==========================================
-# ROTAS ESTÁTICAS (FRONTEND)
-# ==========================================
-
 @app.route("/")
 def serve_index():
     return send_from_directory("public", "index.html")
@@ -83,11 +65,6 @@ def serve_index():
 @app.route("/<path:path>")
 def serve_static(path):
     return send_from_directory("public", path)
-
-
-# ==========================================
-# ROTAS DE AUTENTICAÇÃO
-# ==========================================
 
 @app.route("/api/auth/register", methods=["POST"])
 def register():
@@ -98,7 +75,6 @@ def register():
     name = data.get("name")
     email = data.get("email").lower().strip()
     password = data.get("password")
-    # Por padrão, cadastro comum cria perfil 'user'
     role = data.get("role", "user")
     
     if role not in ["admin", "manager", "user"]:
@@ -121,7 +97,6 @@ def register():
     finally:
         conn.close()
 
-
 @app.route("/api/auth/login", methods=["POST"])
 def login():
     data = request.get_json()
@@ -138,7 +113,6 @@ def login():
     if not user or not bcrypt.checkpw(password.encode("utf-8"), user["password_hash"].encode("utf-8")):
         return jsonify({"message": "E-mail ou senha incorretos!"}), 401
         
-    # Gera o Token JWT válido por 24 horas
     expiration = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=24)
     token = jwt.encode(
         {
@@ -160,16 +134,10 @@ def login():
         }
     })
 
-
 @app.route("/api/auth/me", methods=["GET"])
 @token_required
 def get_me(current_user):
     return jsonify(current_user)
-
-
-# ==========================================
-# ROTAS DE USUÁRIOS (GERENCIAMENTO - ADMIN ONLY)
-# ==========================================
 
 @app.route("/api/users", methods=["GET"])
 @token_required
@@ -179,7 +147,6 @@ def list_users(current_user):
     users = conn.execute("SELECT id, name, email, role, created_at FROM users").fetchall()
     conn.close()
     return jsonify([dict(u) for u in users])
-
 
 @app.route("/api/users", methods=["POST"])
 @token_required
@@ -212,7 +179,6 @@ def admin_create_user(current_user):
     finally:
         conn.close()
 
-
 @app.route("/api/users/<int:user_id>", methods=["PUT"])
 @token_required
 @roles_allowed("admin")
@@ -224,7 +190,7 @@ def admin_update_user(current_user, user_id):
     name = data.get("name")
     email = data.get("email").lower().strip()
     role = data.get("role")
-    password = data.get("password")  # Opcional na edição
+    password = data.get("password")
     
     if role not in ["admin", "manager", "user"]:
         return jsonify({"message": "Perfil inválido!"}), 400
@@ -249,7 +215,6 @@ def admin_update_user(current_user, user_id):
     finally:
         conn.close()
 
-
 @app.route("/api/users/<int:user_id>", methods=["DELETE"])
 @token_required
 @roles_allowed("admin")
@@ -263,16 +228,10 @@ def admin_delete_user(current_user, user_id):
     conn.close()
     return jsonify({"message": "Usuário excluído com sucesso!"})
 
-
-# ==========================================
-# ROTAS DE PROJETOS
-# ==========================================
-
 @app.route("/api/projects", methods=["GET"])
 @token_required
 def list_projects(current_user):
     conn = get_db_connection()
-    # Admins e Gerentes podem ver todos os projetos
     if current_user["role"] in ["admin", "manager"]:
         projects = conn.execute(
             """
@@ -285,7 +244,6 @@ def list_projects(current_user):
             """
         ).fetchall()
     else:
-        # Usuários normais só vêem projetos onde são membros
         projects = conn.execute(
             """
             SELECT p.*, u.name as creator_name,
@@ -302,7 +260,6 @@ def list_projects(current_user):
         
     conn.close()
     return jsonify([dict(p) for p in projects])
-
 
 @app.route("/api/projects", methods=["POST"])
 @token_required
@@ -324,7 +281,6 @@ def create_project(current_user):
         )
         project_id = cursor.lastrowid
         
-        # Adiciona automaticamente o criador do projeto como membro dele
         cursor.execute(
             "INSERT INTO project_members (project_id, user_id) VALUES (?, ?)",
             (project_id, current_user["id"])
@@ -336,7 +292,6 @@ def create_project(current_user):
         return jsonify({"message": f"Erro ao criar projeto: {e}"}), 500
     finally:
         conn.close()
-
 
 @app.route("/api/projects/<int:project_id>", methods=["PUT"])
 @token_required
@@ -350,7 +305,6 @@ def update_project(current_user, project_id):
     description = data.get("description", "")
     
     conn = get_db_connection()
-    # Se for gerente, validar se é criador ou membro do projeto
     if current_user["role"] == "manager":
         project = conn.execute("SELECT created_by FROM projects WHERE id = ?", (project_id,)).fetchone()
         if not project:
@@ -365,7 +319,6 @@ def update_project(current_user, project_id):
     conn.close()
     return jsonify({"message": "Projeto atualizado com sucesso!"})
 
-
 @app.route("/api/projects/<int:project_id>", methods=["DELETE"])
 @token_required
 @roles_allowed("admin", "manager")
@@ -375,11 +328,6 @@ def delete_project(current_user, project_id):
     conn.commit()
     conn.close()
     return jsonify({"message": "Projeto excluído com sucesso!"})
-
-
-# ==========================================
-# ROTAS DE ASSOCIAÇÃO DE MEMBROS AO PROJETO
-# ==========================================
 
 @app.route("/api/projects/<int:project_id>/members", methods=["GET"])
 @token_required
@@ -394,7 +342,6 @@ def list_project_members(current_user, project_id):
         (project_id,)
     ).fetchall()
     
-    # Busca também usuários que NÃO são membros ainda (útil para dropdown de adição)
     all_users = conn.execute(
         """
         SELECT id, name, email, role FROM users 
@@ -408,7 +355,6 @@ def list_project_members(current_user, project_id):
         "members": [dict(m) for m in members],
         "available_users": [dict(u) for u in all_users]
     })
-
 
 @app.route("/api/projects/<int:project_id>/members", methods=["POST"])
 @token_required
@@ -433,7 +379,6 @@ def add_project_member(current_user, project_id):
     finally:
         conn.close()
 
-
 @app.route("/api/projects/<int:project_id>/members/<int:user_id>", methods=["DELETE"])
 @token_required
 @roles_allowed("admin", "manager")
@@ -443,7 +388,6 @@ def remove_project_member(current_user, project_id, user_id):
         "DELETE FROM project_members WHERE project_id = ? AND user_id = ?",
         (project_id, user_id)
     )
-    # Se a pessoa tinha tarefas nesse projeto, desassocia as tarefas
     conn.execute(
         "UPDATE tasks SET assigned_to = NULL WHERE project_id = ? AND assigned_to = ?",
         (project_id, user_id)
@@ -451,11 +395,6 @@ def remove_project_member(current_user, project_id, user_id):
     conn.commit()
     conn.close()
     return jsonify({"message": "Membro removido do projeto com sucesso!"})
-
-
-# ==========================================
-# ROTAS DE TAREFAS
-# ==========================================
 
 @app.route("/api/tasks", methods=["GET"])
 @token_required
@@ -472,7 +411,6 @@ def list_tasks(current_user):
     """
     params = []
     
-    # Se o usuário não for admin nem gerente, restringir apenas aos projetos dele
     if current_user["role"] not in ["admin", "manager"]:
         query += " AND t.project_id IN (SELECT project_id FROM project_members WHERE user_id = ?)"
         params.append(current_user["id"])
@@ -492,7 +430,6 @@ def list_tasks(current_user):
     conn.close()
     return jsonify([dict(t) for t in tasks])
 
-
 @app.route("/api/tasks", methods=["POST"])
 @token_required
 @roles_allowed("admin", "manager")
@@ -506,13 +443,12 @@ def create_task(current_user):
     project_id = data.get("project_id")
     status = data.get("status", "todo")
     assigned_to = data.get("assigned_to") or None
-    due_date = data.get("due_date") or None # Format: YYYY-MM-DD
+    due_date = data.get("due_date") or None
     
     if status not in ["todo", "in_progress", "done"]:
         return jsonify({"message": "Status de tarefa inválido!"}), 400
         
     conn = get_db_connection()
-    # Verifica se o responsável (se informado) é membro do projeto
     if assigned_to:
         member = conn.execute(
             "SELECT 1 FROM project_members WHERE project_id = ? AND user_id = ?",
@@ -532,7 +468,6 @@ def create_task(current_user):
     conn.commit()
     conn.close()
     return jsonify({"message": "Tarefa criada com sucesso!"}), 201
-
 
 @app.route("/api/tasks/<int:task_id>", methods=["PUT"])
 @token_required
@@ -559,7 +494,6 @@ def update_task(current_user, task_id):
         
     project_id = task["project_id"]
     
-    # Verifica se o responsável é membro do projeto
     if assigned_to:
         member = conn.execute(
             "SELECT 1 FROM project_members WHERE project_id = ? AND user_id = ?",
@@ -580,7 +514,6 @@ def update_task(current_user, task_id):
     conn.close()
     return jsonify({"message": "Tarefa atualizada com sucesso!"})
 
-
 @app.route("/api/tasks/<int:task_id>", methods=["DELETE"])
 @token_required
 @roles_allowed("admin", "manager")
@@ -591,11 +524,9 @@ def delete_task(current_user, task_id):
     conn.close()
     return jsonify({"message": "Tarefa excluída com sucesso!"})
 
-
 @app.route("/api/tasks/<int:task_id>/status", methods=["PATCH"])
 @token_required
 def update_task_status(current_user, task_id):
-    """Atualiza o status da tarefa. Qualquer usuário que seja responsável pela tarefa (ou admin/gerente) pode alterar."""
     data = request.get_json()
     if not data or not data.get("status"):
         return jsonify({"message": "O status é obrigatório!"}), 400
@@ -611,7 +542,6 @@ def update_task_status(current_user, task_id):
         conn.close()
         return jsonify({"message": "Tarefa não encontrada!"}), 404
         
-    # Se o usuário for comum, verificar se ele é o responsável por essa tarefa
     if current_user["role"] not in ["admin", "manager"]:
         if task["assigned_to"] != current_user["id"]:
             conn.close()
@@ -622,25 +552,17 @@ def update_task_status(current_user, task_id):
     conn.close()
     return jsonify({"message": "Status da tarefa atualizado com sucesso!"})
 
-
-# ==========================================
-# SIMULAÇÃO DE ALERTAS DE E-MAIL
-# ==========================================
-
 @app.route("/api/alerts", methods=["GET"])
 @token_required
 def list_alerts(current_user):
-    """Retorna a caixa de e-mails enviados simulados (para exibição no Dashboard)."""
     conn = get_db_connection()
     alerts = conn.execute("SELECT * FROM email_alerts ORDER BY sent_at DESC").fetchall()
     conn.close()
     return jsonify([dict(a) for a in alerts])
 
-
 def send_real_email(to_email, subject, body):
-    """Tenta enviar um e-mail de verdade via SMTP se estiver configurado."""
     if not Config.SMTP_SERVER or not Config.SMTP_USER:
-        return False  # Não configurado
+        return False
         
     try:
         msg = MIMEMultipart()
@@ -660,14 +582,11 @@ def send_real_email(to_email, subject, body):
         print(f"Erro ao enviar e-mail real via SMTP: {e}")
         return False
 
-
 @app.route("/api/alerts/check", methods=["POST"])
 @token_required
 def check_deadlines_and_alert(current_user):
-    """Varre tarefas pendentes/em andamento, identifica vencimento próximo ou atraso e dispara alertas."""
     conn = get_db_connection()
     
-    # Busca todas as tarefas ativas ('todo', 'in_progress') com prazo definido
     tasks = conn.execute(
         """
         SELECT t.id, t.title, t.due_date, t.status, p.name as project_name, u.name as user_name, u.email as user_email
@@ -693,7 +612,6 @@ def check_deadlines_and_alert(current_user):
         is_alertable = False
         
         if due_date < today:
-            # Tarefa Atrasada
             subject = f"[TaskFlow] URGENTE: Tarefa atrasada - {task['title']}"
             body = (
                 f"Olá, {task['user_name']}.\n\n"
@@ -704,7 +622,6 @@ def check_deadlines_and_alert(current_user):
             )
             is_alertable = True
         elif today <= due_date <= (today + datetime.timedelta(days=3)):
-            # Tarefa próxima do vencimento (até 3 dias)
             days_left = (due_date - today).days
             dias_texto = f"{days_left} dia(s)" if days_left > 0 else "hoje"
             subject = f"[TaskFlow] Lembrete: Vencimento da tarefa - {task['title']}"
@@ -717,7 +634,6 @@ def check_deadlines_and_alert(current_user):
             is_alertable = True
             
         if is_alertable:
-            # Verifica se já enviamos este e-mail hoje para evitar spam
             today_start = f"{today} 00:00:00"
             existing_alert = conn.execute(
                 """
@@ -728,17 +644,13 @@ def check_deadlines_and_alert(current_user):
             ).fetchone()
             
             if not existing_alert:
-                # 1. Registra no banco (para visualização no dashboard simulado)
                 conn.execute(
                     "INSERT INTO email_alerts (to_email, subject, body) VALUES (?, ?, ?)",
                     (task["user_email"], subject, body)
                 )
                 conn.commit()
                 
-                # 2. Tenta disparar e-mail real via SMTP
                 sent_real = send_real_email(task["user_email"], subject, body)
-                
-                # Log no terminal
                 status_real = "SMTP Real" if sent_real else "Simulado"
                 print(f"[ALERTA DISPARADO - {status_real}] Destino: {task['user_email']} | Assunto: {subject}")
                 
@@ -747,18 +659,11 @@ def check_deadlines_and_alert(current_user):
     conn.close()
     return jsonify({"message": "Varredura concluída com sucesso!", "alerts_generated": alerts_created})
 
-
-# ==========================================
-# GERAÇÃO DE RELATÓRIO PDF (FPDF2)
-# ==========================================
-
 @app.route("/api/reports/project/<int:project_id>", methods=["GET"])
 @token_required
 def generate_project_report(current_user, project_id):
-    """Gera um relatório executivo em PDF de um projeto específico."""
     conn = get_db_connection()
     
-    # Carrega dados do projeto
     project = conn.execute(
         """
         SELECT p.*, u.name as creator_name 
@@ -773,7 +678,6 @@ def generate_project_report(current_user, project_id):
         conn.close()
         return jsonify({"message": "Projeto não encontrado!"}), 404
         
-    # Carrega todas as tarefas do projeto
     tasks = conn.execute(
         """
         SELECT t.*, u.name as assigned_name 
@@ -785,7 +689,6 @@ def generate_project_report(current_user, project_id):
         (project_id,)
     ).fetchall()
     
-    # Carrega os membros do projeto
     members = conn.execute(
         """
         SELECT u.name, u.email, u.role 
@@ -798,28 +701,22 @@ def generate_project_report(current_user, project_id):
     
     conn.close()
     
-    # Calcula estatísticas
     total_tasks = len(tasks)
     todo_tasks = sum(1 for t in tasks if t["status"] == "todo")
     in_progress_tasks = sum(1 for t in tasks if t["status"] == "in_progress")
     done_tasks = sum(1 for t in tasks if t["status"] == "done")
     
-    # Cria o PDF usando fpdf2
     pdf = FPDF()
     pdf.add_page()
     pdf.set_margins(15, 15, 15)
+    pdf.set_text_color(33, 43, 54)
     
-    # Cores personalizadas (harmoniosas, azul escuro e cinzas)
-    pdf.set_text_color(33, 43, 54) # Grafite escuro
-    
-    # Título Principal
     pdf.set_font("helvetica", "B", 20)
     pdf.cell(0, 15, "TaskFlow - Relatório do Projeto", border=0, align="C", new_x="LMARGIN", new_y="NEXT")
     pdf.set_draw_color(100, 116, 139)
     pdf.line(15, pdf.get_y(), 195, pdf.get_y())
     pdf.ln(5)
     
-    # Informações Gerais
     pdf.set_font("helvetica", "B", 12)
     pdf.cell(40, 8, "Nome do Projeto:")
     pdf.set_font("helvetica", "", 12)
@@ -841,7 +738,6 @@ def generate_project_report(current_user, project_id):
     pdf.multi_cell(0, 8, project["description"] or "Nenhuma descrição fornecida.")
     pdf.ln(5)
     
-    # Indicadores do Projeto
     pdf.set_font("helvetica", "B", 14)
     pdf.cell(0, 10, "Progresso do Projeto", new_x="LMARGIN", new_y="NEXT")
     
@@ -852,18 +748,15 @@ def generate_project_report(current_user, project_id):
     pdf.cell(45, 8, f"Concluídas: {done_tasks}", border=1, align="C", new_x="LMARGIN", new_y="NEXT")
     pdf.ln(8)
     
-    # Lista de Membros do Projeto
     pdf.set_font("helvetica", "B", 14)
     pdf.cell(0, 10, "Equipe do Projeto", new_x="LMARGIN", new_y="NEXT")
     
-    # Cabeçalho da Tabela de Membros
     pdf.set_fill_color(241, 245, 249)
     pdf.set_font("helvetica", "B", 10)
     pdf.cell(60, 8, "Nome", border=1, fill=True)
     pdf.cell(70, 8, "E-mail", border=1, fill=True)
     pdf.cell(50, 8, "Função", border=1, fill=True, new_x="LMARGIN", new_y="NEXT")
     
-    # Corpo da Tabela de Membros
     pdf.set_font("helvetica", "", 10)
     for member in members:
         role_label = "Administrador" if member["role"] == "admin" else "Gerente" if member["role"] == "manager" else "Colaborador"
@@ -872,11 +765,9 @@ def generate_project_report(current_user, project_id):
         pdf.cell(50, 8, role_label, border=1, new_x="LMARGIN", new_y="NEXT")
     pdf.ln(8)
     
-    # Lista de Tarefas do Projeto
     pdf.set_font("helvetica", "B", 14)
     pdf.cell(0, 10, "Lista de Tarefas", new_x="LMARGIN", new_y="NEXT")
     
-    # Cabeçalho da Tabela de Tarefas
     pdf.set_fill_color(241, 245, 249)
     pdf.set_font("helvetica", "B", 10)
     pdf.cell(60, 8, "Título da Tarefa", border=1, fill=True)
@@ -884,7 +775,6 @@ def generate_project_report(current_user, project_id):
     pdf.cell(40, 8, "Prazo", border=1, fill=True)
     pdf.cell(35, 8, "Status", border=1, fill=True, new_x="LMARGIN", new_y="NEXT")
     
-    # Corpo da Tabela de Tarefas
     pdf.set_font("helvetica", "", 9)
     for task in tasks:
         status_label = "A Fazer" if task["status"] == "todo" else "Em Andamento" if task["status"] == "in_progress" else "Concluída"
@@ -895,19 +785,12 @@ def generate_project_report(current_user, project_id):
         pdf.cell(40, 8, due_date_formatted, border=1)
         pdf.cell(35, 8, status_label, border=1, new_x="LMARGIN", new_y="NEXT")
         
-    # Geração dos bytes do PDF para o Response
-    pdf_bytes = pdf.output()
-    
+    pdf_data = pdf.output()
+    pdf_bytes = bytes(pdf_data) if isinstance(pdf_data, bytearray) else pdf_data.encode('latin-1') if isinstance(pdf_data, str) else pdf_data
     response = make_response(pdf_bytes)
     response.headers["Content-Type"] = "application/pdf"
     response.headers["Content-Disposition"] = f"attachment; filename=relatorio_projeto_{project_id}.pdf"
     return response
 
-
-# ==========================================
-# INICIALIZADOR DO SERVIDOR FLASK
-# ==========================================
-
 if __name__ == "__main__":
-    # Roda o servidor local na porta 5000
     app.run(debug=True, port=5000)

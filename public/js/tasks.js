@@ -1,27 +1,20 @@
-// TaskFlow - Módulo de Gerenciamento de Tarefas (Kanban)
-
 import { api } from "./api.js";
 import { showToast, openModal, closeModal } from "./app.js";
 
 export const tasks = {
-    // Lista local de tarefas carregadas
     list: [],
     activeProjectId: null,
 
-    // Inicializa a aba de tarefas
     async init() {
         await this.populateProjectFilter();
         this.setupDragAndDrop();
         this.clearBoard();
     },
 
-    // Carrega projetos para preencher o select do filtro
     async populateProjectFilter() {
         try {
             const projects = await api.get("/projects");
             const select = document.getElementById("task-project-filter");
-            
-            // Guarda seleção atual para não resetar se recarregar
             const selectedVal = select.value;
             
             select.innerHTML = '<option value="">Selecione um projeto...</option>';
@@ -42,13 +35,10 @@ export const tasks = {
         }
     },
 
-    // Altera o estado dos botões que dependem de um projeto selecionado
     updateActionButtonsState() {
         const hasProject = !!this.activeProjectId;
-        
         const currentUser = api.getUser();
         const isManager = currentUser && (currentUser.role === "manager" || currentUser.role === "admin");
-        
         const newBtn = document.getElementById("new-task-btn");
         const reportBtn = document.getElementById("project-report-btn");
         
@@ -63,7 +53,6 @@ export const tasks = {
         }
     },
 
-    // Reseta o quadro kanban
     clearBoard() {
         document.getElementById("cards-todo").innerHTML = '<p class="empty-state">Selecione um projeto para visualizar.</p>';
         document.getElementById("cards-in_progress").innerHTML = '<p class="empty-state">Selecione um projeto para visualizar.</p>';
@@ -74,7 +63,6 @@ export const tasks = {
         document.getElementById("count-done").textContent = "0";
     },
 
-    // Carrega tarefas do projeto ativo
     async loadTasks() {
         if (!this.activeProjectId) {
             this.clearBoard();
@@ -90,7 +78,6 @@ export const tasks = {
         }
     },
 
-    // Renderiza o quadro Kanban
     renderKanban() {
         const columns = {
             todo: document.getElementById("cards-todo"),
@@ -98,7 +85,6 @@ export const tasks = {
             done: document.getElementById("cards-done")
         };
 
-        // Limpa colunas
         Object.values(columns).forEach(col => col.innerHTML = "");
 
         const counts = { todo: 0, in_progress: 0, done: 0 };
@@ -116,7 +102,6 @@ export const tasks = {
             card.dataset.id = task.id;
             card.dataset.status = task.status;
             
-            // Eventos de drag nativos
             card.ondragstart = (e) => {
                 e.dataTransfer.setData("text/plain", task.id);
                 card.style.opacity = "0.5";
@@ -126,7 +111,6 @@ export const tasks = {
                 card.style.opacity = "1";
             };
 
-            // Trata formatação de prazo e classes de atraso
             let dueDateHTML = "";
             if (task.due_date) {
                 const parts = task.due_date.split("-");
@@ -140,7 +124,6 @@ export const tasks = {
                         timeClass = "danger";
                         iconClass = "fa-calendar-xmark";
                     } else {
-                        // Calcula se vence em 3 dias
                         const dueTime = new Date(task.due_date).getTime();
                         const todayTime = new Date(todayStr).getTime();
                         const diffDays = Math.ceil((dueTime - todayTime) / (1000 * 60 * 60 * 24));
@@ -157,7 +140,6 @@ export const tasks = {
                 `;
             }
 
-            // Exibe o responsável
             const assigneeHTML = task.assigned_name 
                 ? `<div class="task-card-assignee" title="${task.assigned_email}">
                     <i class="fa-solid fa-user-tag"></i> ${task.assigned_name.split(" ")[0]}
@@ -166,7 +148,6 @@ export const tasks = {
                     <i class="fa-regular fa-user"></i> Ninguém
                    </div>`;
 
-            // Ações de alteração rápida de status para celulares/facilidade
             let statusActionHTML = "";
             const isAssignedToMe = currentUser && task.assigned_to === currentUser.id;
             const canChangeStatus = isManager || isAssignedToMe;
@@ -204,12 +185,10 @@ export const tasks = {
             columns[task.status].appendChild(card);
         });
 
-        // Atualiza contadores das colunas
         document.getElementById("count-todo").textContent = counts.todo;
         document.getElementById("count-progress").textContent = counts.in_progress;
         document.getElementById("count-done").textContent = counts.done;
 
-        // Adiciona estados vazios caso não haja nada na coluna
         Object.keys(columns).forEach(status => {
             if (columns[status].children.length === 0) {
                 columns[status].innerHTML = '<p class="empty-state">Sem tarefas nesta etapa.</p>';
@@ -219,9 +198,7 @@ export const tasks = {
         this.bindEvents();
     },
 
-    // Vincula cliques aos botões dos cards de tarefa
     bindEvents() {
-        // Movimentação rápida de status
         document.querySelectorAll(".btn-status-next").forEach(btn => {
             btn.onclick = async (e) => {
                 const id = e.currentTarget.dataset.id;
@@ -230,7 +207,6 @@ export const tasks = {
             };
         });
 
-        // Edição de tarefas
         document.querySelectorAll(".btn-edit-task").forEach(btn => {
             btn.onclick = async (e) => {
                 const id = e.currentTarget.dataset.id;
@@ -238,7 +214,6 @@ export const tasks = {
             };
         });
 
-        // Exclusão de tarefas
         document.querySelectorAll(".btn-delete-task").forEach(btn => {
             btn.onclick = async (e) => {
                 const id = e.currentTarget.dataset.id;
@@ -249,7 +224,6 @@ export const tasks = {
         });
     },
 
-    // Configura o drag and drop nativo
     setupDragAndDrop() {
         const columns = document.querySelectorAll(".kanban-column");
         
@@ -269,7 +243,6 @@ export const tasks = {
                 const id = e.dataTransfer.getData("text/plain");
                 const newStatus = col.dataset.status;
                 
-                // Busca tarefa na lista local
                 const task = this.list.find(t => t.id == id);
                 if (task && task.status !== newStatus) {
                     await this.updateTaskStatus(id, newStatus);
@@ -278,7 +251,6 @@ export const tasks = {
         });
     },
 
-    // Atualiza status da tarefa via API
     async updateTaskStatus(id, status) {
         try {
             await api.patch(`/tasks/${id}/status`, { status });
@@ -286,26 +258,22 @@ export const tasks = {
             await this.loadTasks();
         } catch (error) {
             showToast(error.message || "Você não tem permissão para alterar o status desta tarefa.", "danger");
-            await this.loadTasks(); // recarrega para reverter visualmente
+            await this.loadTasks();
         }
     },
 
-    // Abre formulário para criação de tarefa
     async openCreateTask() {
         if (!this.activeProjectId) return;
         
         document.getElementById("task-modal-title").textContent = "Nova Tarefa";
         document.getElementById("task-modal-id").value = "";
         document.getElementById("task-form").reset();
-        
-        // Seleciona status padrão da coluna "A Fazer"
         document.getElementById("task-modal-status").value = "todo";
         
         await this.loadAssigneesDropdown();
         openModal("task-modal");
     },
 
-    // Abre formulário para edição de tarefa
     async openEditTask(id) {
         const task = this.list.find(t => t.id == id);
         if (!task) return;
@@ -321,7 +289,6 @@ export const tasks = {
         openModal("task-modal");
     },
 
-    // Popula o select de responsáveis apenas com membros do projeto ativo
     async loadAssigneesDropdown(selectedAssigneeId = null) {
         try {
             const data = await api.get(`/projects/${this.activeProjectId}/members`);
@@ -341,7 +308,6 @@ export const tasks = {
         }
     },
 
-    // Salva ou atualiza a tarefa via API
     async saveTask(formData) {
         const id = formData.id;
         const payload = {
@@ -368,7 +334,6 @@ export const tasks = {
         }
     },
 
-    // Exclui tarefa via API
     async deleteTask(id) {
         try {
             await api.delete(`/tasks/${id}`);
@@ -379,7 +344,6 @@ export const tasks = {
         }
     },
 
-    // Dispara a geração de PDF de relatórios
     async downloadProjectReport() {
         if (!this.activeProjectId) return;
         

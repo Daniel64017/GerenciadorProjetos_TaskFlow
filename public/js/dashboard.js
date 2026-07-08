@@ -1,12 +1,9 @@
-// TaskFlow - Módulo do Dashboard e Gráficos
-
 import { api } from "./api.js";
 import { showToast } from "./app.js";
 
 let statusChartInstance = null;
 
 export const dashboard = {
-    // Inicializa ou atualiza o Dashboard
     async init() {
         try {
             const projects = await api.get("/projects");
@@ -24,14 +21,12 @@ export const dashboard = {
         }
     },
 
-    // Atualiza os contadores numéricos
     updateStatsCards(projects, tasks) {
         document.getElementById("stat-projects-count").textContent = projects.length;
         
         const todoCount = tasks.filter(t => t.status === "todo" || t.status === "in_progress").length;
         const doneCount = tasks.filter(t => t.status === "done").length;
         
-        // Identifica tarefas atrasadas (status != done e due_date < hoje)
         const todayStr = new Date().toISOString().split("T")[0];
         const overdueCount = tasks.filter(t => t.status !== "done" && t.due_date && t.due_date < todayStr).length;
         
@@ -40,7 +35,6 @@ export const dashboard = {
         document.getElementById("stat-tasks-overdue").textContent = overdueCount;
     },
 
-    // Renderiza o gráfico Chart.js
     renderStatusChart(tasks) {
         const ctx = document.getElementById("tasks-status-chart").getContext("2d");
         
@@ -48,13 +42,11 @@ export const dashboard = {
         const inProgress = tasks.filter(t => t.status === "in_progress").length;
         const done = tasks.filter(t => t.status === "done").length;
         
-        // Se não houver tarefas, exibe dados vazios padrão para o gráfico não quebrar
         const total = todo + inProgress + done;
         const chartData = total > 0 ? [todo, inProgress, done] : [1, 0, 0];
         const chartLabels = total > 0 ? ["A Fazer", "Em Andamento", "Concluída"] : ["Nenhuma tarefa registrada"];
         const chartColors = total > 0 ? ["#3b82f6", "#f59e0b", "#10b981"] : ["#334155"];
         
-        // Destrói gráfico antigo se existir
         if (statusChartInstance) {
             statusChartInstance.destroy();
         }
@@ -87,7 +79,6 @@ export const dashboard = {
         });
     },
 
-    // Atualiza a badge de alertas não lidos no menu
     updateAlertsCount(alerts) {
         const badge = document.getElementById("alerts-unread-badge");
         badge.textContent = alerts.length;
@@ -98,7 +89,6 @@ export const dashboard = {
         }
     },
 
-    // Renderiza uma prévia dos alertas recentes no Dashboard
     renderRecentAlerts(alerts) {
         const container = document.getElementById("dashboard-alerts-container");
         container.innerHTML = "";
@@ -108,13 +98,11 @@ export const dashboard = {
             return;
         }
 
-        // Mostra os 3 últimos
         const recent = alerts.slice(0, 3);
         recent.forEach(alert => {
             const card = document.createElement("div");
             card.className = "alert-message-card";
             
-            // Determina a borda baseada no assunto do e-mail
             if (alert.subject.includes("URGENTE")) {
                 card.classList.add("overdue-alert");
             } else {
@@ -134,7 +122,6 @@ export const dashboard = {
         });
     },
 
-    // Renderiza todos os alertas na aba dedicada a Alertas
     renderFullAlertsTab(alerts) {
         const container = document.getElementById("alerts-history-container");
         container.innerHTML = "";
@@ -175,13 +162,11 @@ export const dashboard = {
         });
     },
 
-    // Dispara a varredura manual de tarefas para geração de alertas
     async triggerVerification() {
         try {
             showToast("Verificando prazos de entrega...", "info");
             const result = await api.post("/alerts/check");
             showToast(`${result.message} Alertas gerados: ${result.alerts_generated}`, "success");
-            // Recarrega os dados do Dashboard
             await this.init();
         } catch (error) {
             showToast("Erro ao processar varredura de prazos.", "danger");

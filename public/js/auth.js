@@ -1,10 +1,7 @@
-// TaskFlow - Módulo de Autenticação e Controle de Acesso
-
 import { api } from "./api.js";
 import { showToast } from "./app.js";
 
 export const auth = {
-    // Verifica se há sessão ativa e inicializa as telas
     checkSession() {
         const token = api.getToken();
         const user = api.getUser();
@@ -16,7 +13,6 @@ export const auth = {
         return false;
     },
 
-    // Executa o Login
     async login(email, password) {
         try {
             const data = await api.post("/auth/login", { email, password });
@@ -31,7 +27,6 @@ export const auth = {
         }
     },
 
-    // Executa o Cadastro
     async register(name, email, password, role) {
         try {
             await api.post("/auth/register", { name, email, password, role });
@@ -43,17 +38,14 @@ export const auth = {
         }
     },
 
-    // Desloga o usuário
     logout() {
         api.clearToken();
         showToast("Sessão encerrada com sucesso.", "info");
     },
 
-    // Aplica restrições de layout com base no perfil de acesso do usuário logado
     applyUserProfile(user) {
         if (!user) return;
 
-        // Atualiza elementos visuais de perfil na Sidebar
         document.getElementById("user-display-name").textContent = user.name;
         
         let roleLabel = "Colaborador";
@@ -63,15 +55,11 @@ export const auth = {
         const roleBadge = document.getElementById("user-display-role");
         roleBadge.textContent = roleLabel;
         
-        // Remove classes antigas de cor do badge e aplica a nova
         roleBadge.className = "badge";
         if (user.role === "admin") roleBadge.classList.add("badge-danger");
         else if (user.role === "manager") roleBadge.classList.add("badge-primary");
         else roleBadge.classList.add("badge-success");
 
-        // Habilita/Desabilita seções baseadas no perfil
-        
-        // Admin
         const adminElements = document.querySelectorAll(".admin-only");
         adminElements.forEach(el => {
             if (user.role === "admin") {
@@ -81,7 +69,6 @@ export const auth = {
             }
         });
 
-        // Gerente de Projeto (ou Admin, que tem acesso total)
         const managerElements = document.querySelectorAll(".manager-only");
         managerElements.forEach(el => {
             if (user.role === "manager" || user.role === "admin") {

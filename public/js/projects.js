@@ -1,19 +1,14 @@
-// TaskFlow - Módulo de Projetos e Membros
-
 import { api } from "./api.js";
 import { showToast, openModal, closeModal } from "./app.js";
 
 export const projects = {
-    // Array local com todos os projetos carregados
     list: [],
 
-    // Inicializa a aba de projetos
     async init() {
         await this.loadProjects();
         this.setupSearch();
     },
 
-    // Carrega a lista de projetos da API e renderiza
     async loadProjects() {
         try {
             const data = await api.get("/projects");
@@ -24,7 +19,6 @@ export const projects = {
         }
     },
 
-    // Renderiza os projetos na tela
     renderProjects(projectsToRender) {
         const container = document.getElementById("projects-grid-container");
         container.innerHTML = "";
@@ -81,9 +75,7 @@ export const projects = {
         this.bindEvents();
     },
 
-    // Vincula cliques aos botões dos cards
     bindEvents() {
-        // Botão de Equipe (Membros)
         document.querySelectorAll(".btn-members").forEach(btn => {
             btn.onclick = (e) => {
                 const id = e.currentTarget.dataset.id;
@@ -92,7 +84,6 @@ export const projects = {
             };
         });
 
-        // Botão de Editar Projeto
         document.querySelectorAll(".btn-edit-project").forEach(btn => {
             btn.onclick = async (e) => {
                 const id = e.currentTarget.dataset.id;
@@ -100,7 +91,6 @@ export const projects = {
             };
         });
 
-        // Botão de Excluir Projeto
         document.querySelectorAll(".btn-delete-project").forEach(btn => {
             btn.onclick = async (e) => {
                 const id = e.currentTarget.dataset.id;
@@ -111,7 +101,6 @@ export const projects = {
         });
     },
 
-    // Configura a barra de buscas
     setupSearch() {
         const input = document.getElementById("project-search");
         input.oninput = (e) => {
@@ -124,7 +113,6 @@ export const projects = {
         };
     },
 
-    // Abre o formulário para criação
     openCreateProject() {
         document.getElementById("project-modal-title").textContent = "Novo Projeto";
         document.getElementById("project-modal-id").value = "";
@@ -132,7 +120,6 @@ export const projects = {
         openModal("project-modal");
     },
 
-    // Abre o formulário para edição
     async openEditProject(id) {
         const project = this.list.find(p => p.id == id);
         if (!project) return;
@@ -144,7 +131,6 @@ export const projects = {
         openModal("project-modal");
     },
 
-    // Salva ou atualiza um projeto
     async saveProject(formData) {
         const id = formData.id;
         const payload = {
@@ -154,11 +140,9 @@ export const projects = {
 
         try {
             if (id) {
-                // Editar
                 await api.put(`/projects/${id}`, payload);
                 showToast("Projeto atualizado com sucesso!", "success");
             } else {
-                // Criar
                 await api.post("/projects", payload);
                 showToast("Projeto criado com sucesso!", "success");
             }
@@ -169,7 +153,6 @@ export const projects = {
         }
     },
 
-    // Exclui projeto do banco
     async deleteProject(id) {
         try {
             await api.delete(`/projects/${id}`);
@@ -180,39 +163,28 @@ export const projects = {
         }
     },
 
-    // ==========================================
-    // SEÇÃO DE GERENCIAMENTO DE MEMBROS (EQUIPE)
-    // ==========================================
-
     activeProjectId: null,
 
-    // Abre a gestão de equipe do projeto
     async openMembersManagement(projectId, projectName) {
         this.activeProjectId = projectId;
         document.getElementById("members-modal-project-name").textContent = projectName;
-        
-        // Limpa formulário
         document.getElementById("add-member-form").reset();
-        
         await this.loadMembersList();
         openModal("members-modal");
     },
 
-    // Carrega e renderiza a lista de membros e disponíveis no dropdown
     async loadMembersList() {
         try {
             const data = await api.get(`/projects/${this.activeProjectId}/members`);
             const members = data.members;
             const available = data.available_users;
 
-            // Renderiza Dropdown de Usuários para Adicionar
             const select = document.getElementById("member-select");
             select.innerHTML = '<option value="">Selecione um usuário...</option>';
             available.forEach(user => {
                 select.innerHTML += `<option value="${user.id}">${user.name} (${user.email})</option>`;
             });
 
-            // Renderiza Lista de Participantes Atuais
             const ul = document.getElementById("project-members-list");
             ul.innerHTML = "";
 
@@ -245,7 +217,6 @@ export const projects = {
                 ul.appendChild(li);
             });
 
-            // Adiciona evento de remoção
             if (isManager) {
                 ul.querySelectorAll(".btn-remove-member").forEach(btn => {
                     btn.onclick = async (e) => {
@@ -262,26 +233,22 @@ export const projects = {
         }
     },
 
-    // Adiciona novo membro ao projeto
     async addMember(userId) {
         try {
             await api.post(`/projects/${this.activeProjectId}/members`, { user_id: userId });
             showToast("Colaborador adicionado à equipe!", "success");
             await this.loadMembersList();
-            // Atualiza projetos para atualizar contagens
             await this.loadProjects();
         } catch (error) {
             showToast(error.message || "Erro ao adicionar membro.", "danger");
         }
     },
 
-    // Remove membro do projeto
     async removeMember(userId) {
         try {
             await api.delete(`/projects/${this.activeProjectId}/members/${userId}`);
             showToast("Membro removido com sucesso.", "success");
             await this.loadMembersList();
-            // Atualiza projetos para atualizar contagens
             await this.loadProjects();
         } catch (error) {
             showToast(error.message || "Erro ao remover membro.", "danger");

@@ -1,14 +1,8 @@
-// TaskFlow - Orquestrador do Frontend (SPA)
-
 import { api } from "./api.js";
 import { auth } from "./auth.js";
 import { dashboard } from "./dashboard.js";
 import { projects } from "./projects.js";
 import { tasks } from "./tasks.js";
-
-// ==========================================
-// FUNÇÕES AUXILIARES GLOBAIS
-// ==========================================
 
 export function showToast(message, type = "info") {
     const container = document.getElementById("toast-container");
@@ -25,7 +19,6 @@ export function showToast(message, type = "info") {
     toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
     container.appendChild(toast);
     
-    // Auto-remove após 3 segundos com efeito fade out
     setTimeout(() => {
         toast.style.animation = "fadeIn 0.25s ease reverse forwards";
         setTimeout(() => toast.remove(), 250);
@@ -42,18 +35,12 @@ export function closeModal(modalId) {
     if (modal) modal.classList.remove("active");
 }
 
-
-// ==========================================
-// ROTEAMENTO DE ABAS E TELAS
-// ==========================================
-
 function switchScreen(screenId) {
     document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
     document.getElementById(screenId).classList.add("active");
 }
 
 async function switchTab(tabId) {
-    // Muda a classe active na sidebar
     document.querySelectorAll(".nav-link").forEach(link => {
         link.classList.remove("active");
         if (link.dataset.tab === tabId) {
@@ -61,13 +48,11 @@ async function switchTab(tabId) {
         }
     });
 
-    // Muda a classe active na aba de conteúdo
     document.querySelectorAll(".tab-content").forEach(content => {
         content.classList.remove("active");
     });
     document.getElementById(tabId).classList.add("active");
 
-    // Atualiza o título da barra superior
     const titles = {
         "dashboard-tab": "Dashboard",
         "projects-tab": "Projetos Ativos",
@@ -77,7 +62,6 @@ async function switchTab(tabId) {
     };
     document.getElementById("current-tab-title").textContent = titles[tabId] || "TaskFlow";
 
-    // Executa recargas específicas ao entrar na aba
     if (tabId === "dashboard-tab") {
         await dashboard.init();
     } else if (tabId === "projects-tab") {
@@ -92,11 +76,6 @@ async function switchTab(tabId) {
         dashboard.updateAlertsCount(alerts);
     }
 }
-
-
-// ==========================================
-// GERENCIAMENTO DE USUÁRIOS (ADMIN ONLY)
-// ==========================================
 
 let adminUsersList = [];
 
@@ -141,7 +120,6 @@ function renderUsersTable(users) {
         tbody.appendChild(tr);
     });
 
-    // Vincula ações da tabela de usuários
     tbody.querySelectorAll(".btn-edit-user").forEach(btn => {
         btn.onclick = (e) => {
             const id = e.currentTarget.dataset.id;
@@ -185,7 +163,6 @@ function openEditUser(id) {
     document.getElementById("user-modal-email").value = user.email;
     document.getElementById("user-modal-role").value = user.role;
     
-    // Senha é opcional ao editar
     document.getElementById("user-modal-password").value = "";
     document.getElementById("user-modal-password").placeholder = "Deixe em branco para não alterar";
     document.getElementById("user-modal-password").removeAttribute("required");
@@ -194,19 +171,12 @@ function openEditUser(id) {
     openModal("user-modal");
 }
 
-
-// ==========================================
-// INICIALIZAÇÃO E EVENTOS DOM
-// ==========================================
-
 document.addEventListener("DOMContentLoaded", () => {
     
-    // 1. Escuta expiração de token
     window.addEventListener("auth-expired", () => {
         switchScreen("auth-screen");
     });
 
-    // 2. Transições da tela de Login / Registro
     document.getElementById("go-to-register").onclick = (e) => {
         e.preventDefault();
         document.getElementById("login-form").classList.remove("active");
@@ -223,7 +193,6 @@ document.addEventListener("DOMContentLoaded", () => {
         document.querySelector("#auth-screen p").textContent = "Gerencie seus projetos e tarefas com eficiência.";
     };
 
-    // 3. Submissão do Login
     document.getElementById("login-form").onsubmit = async (e) => {
         e.preventDefault();
         const email = document.getElementById("login-email").value;
@@ -236,7 +205,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    // 4. Submissão do Registro
     document.getElementById("register-form").onsubmit = async (e) => {
         e.preventDefault();
         const name = document.getElementById("register-name").value;
@@ -246,20 +214,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const success = await auth.register(name, email, pass, role);
         if (success) {
-            // Volta para a tela de login
             document.getElementById("go-to-login").click();
             document.getElementById("login-email").value = email;
             document.getElementById("login-password").value = "";
         }
     };
 
-    // 5. Botão Sair da Conta
     document.getElementById("logout-btn").onclick = () => {
         auth.logout();
         switchScreen("auth-screen");
     };
 
-    // 6. Cliques no menu Sidebar
     document.querySelectorAll(".nav-link").forEach(link => {
         link.onclick = (e) => {
             e.preventDefault();
@@ -268,12 +233,10 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     });
 
-    // 7. Varredura manual de alertas de e-mail
     document.getElementById("trigger-alerts-btn").onclick = async () => {
         await dashboard.triggerVerification();
     };
 
-    // 8. Eventos de Fechamento de Modais
     document.querySelectorAll(".close-modal-btn, .cancel-modal-btn").forEach(btn => {
         btn.onclick = (e) => {
             const modal = e.currentTarget.closest(".modal");
@@ -281,18 +244,12 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     });
 
-    // Fechar ao clicar fora do conteúdo
     window.onclick = (e) => {
         if (e.target.classList.contains("modal")) {
             e.target.classList.remove("active");
         }
     };
 
-    // ==========================================
-    // ENVIO DE FORMULÁRIOS DE MODAIS
-    // ==========================================
-
-    // Envio do formulário de Projetos
     document.getElementById("project-form").onsubmit = async (e) => {
         e.preventDefault();
         const id = document.getElementById("project-modal-id").value;
@@ -301,12 +258,10 @@ document.addEventListener("DOMContentLoaded", () => {
         await projects.saveProject({ id, name, description });
     };
 
-    // Botão de Novo Projeto na aba
     document.getElementById("new-project-btn").onclick = () => {
         projects.openCreateProject();
     };
 
-    // Envio do formulário de Equipe (Membros)
     document.getElementById("add-member-form").onsubmit = async (e) => {
         e.preventDefault();
         const userId = document.getElementById("member-select").value;
@@ -315,24 +270,20 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    // Filtro de Projetos na aba de tarefas (Kanban)
     document.getElementById("task-project-filter").onchange = (e) => {
         tasks.activeProjectId = e.target.value;
         tasks.updateActionButtonsState();
         tasks.loadTasks();
     };
 
-    // Botão de Nova Tarefa na aba
     document.getElementById("new-task-btn").onclick = () => {
         tasks.openCreateTask();
     };
 
-    // Botão de Relatório PDF na aba
     document.getElementById("project-report-btn").onclick = () => {
         tasks.downloadProjectReport();
     };
 
-    // Envio do formulário de Tarefas
     document.getElementById("task-form").onsubmit = async (e) => {
         e.preventDefault();
         const id = document.getElementById("task-modal-id").value;
@@ -345,12 +296,10 @@ document.addEventListener("DOMContentLoaded", () => {
         await tasks.saveTask({ id, title, description, status, due_date, assigned_to });
     };
 
-    // Botão de Novo Usuário (Admin ONLY)
     document.getElementById("new-user-btn").onclick = () => {
         openCreateUser();
     };
 
-    // Envio do formulário de Usuários (Admin ONLY)
     document.getElementById("user-form").onsubmit = async (e) => {
         e.preventDefault();
         const id = document.getElementById("user-modal-id").value;
@@ -377,12 +326,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-
-    // ==========================================
-    // BOOTSTRAP INICIAL
-    // ==========================================
-    
-    // Verifica se já está logado
     const isLogged = auth.checkSession();
     if (isLogged) {
         switchScreen("main-screen");
