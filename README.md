@@ -2,6 +2,10 @@
 
 O **TaskFlow** é uma aplicação web leve e moderna desenvolvida em Python (Flask) no back-end, SQLite como banco de dados relacional e HTML/CSS/JavaScript puro (sem frameworks complexos) no front-end. O sistema foi projetado para facilitar o controle de projetos acadêmicos e corporativos por meio de quadros Kanban, dashboards de indicadores, varredura de prazos com alertas e geração de relatórios executivos em PDF.
 
+Vídeo da Apresentação no Youtube: 
+
+👉 **[https://youtu.be/-Qy1Xv4JtkU)**
+
 ---
 
 ## 🚀 Como Executar o Projeto no seu Computador
